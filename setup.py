@@ -14,5 +14,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Utilities',
     ],
-    packages=find_packages(),
+    packages=['census_places', 'census_places.management.commands'],
 )

@@ -14,7 +14,11 @@ class PlaceBoundary(models.Model):
             )
     place = models.CharField(max_length=5)
     name = models.CharField(max_length=90)
-    lsad = models.CharField(max_length=7)
+    lsad = models.CharField(
+            null=True,
+            blank=True,
+            max_length=7
+            )
     censusarea = models.FloatField()
     geog = models.MultiPolygonField(
             geography=True,

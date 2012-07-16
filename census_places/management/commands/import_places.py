@@ -1,8 +1,8 @@
 from __future__ import with_statement
 
-import codecs
 import logging
 import os.path
+import shutil
 import subprocess
 import tempfile
 import urllib2
@@ -17,7 +17,7 @@ from census_places.enums import STATES
 SHP2PGSQL = getattr(settings, 'SHP2PGSQL_PATH', 'shp2pgsql')
 
 logger = logging.getLogger('census_places.management.commands.import_paces')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class Command(BaseCommand):
     args = '<\'State/Province Name\'|FIPS Code|\'all\'>' 
@@ -42,27 +42,31 @@ class Command(BaseCommand):
             return self.import_single_state(arg)
 
     def import_all_states(self):
-        for fips_code in STATES:
+        for fips_code, state_name in STATES:
             self.import_single_state(fips_code)
 
     def import_single_state(self, arg):
-        url = self._get_url_from_args(arg)
+        url = self._get_url_from_arg(arg)
         logger.info("Importing \"%s\" from %s" % (arg, url))
-        shapefile_path = self._get_temporary_shapefile_path_from_url(url)
-        sql = self._get_sql_from_shapefile(shapefile_path)
+        shapefile_dir = self._get_temporary_shapefile_dir_from_url(url)
+        sql = self._get_sql_from_shapefile_dir(shapefile_dir)
         self._import_from_sql(sql)
-        os.remove(shapefile_path)
+        shutil.rmtree(shapefile_dir)
+
+    def _cleanup_temporary_directory(self, directory):
+        shutil.rmtree(directory)
 
     def _import_from_sql(self, sql):
         cursor = connection.cursor()
         cursor.execute(sql)
 
-    def _get_sql_from_shapefile(self, shapefile):
+    def _get_sql_from_shapefile_dir(self, shapefile_dir):
+        shapefile = self._get_shapefile_path_from_directory(shapefile_dir)
         shapefile_extraction_args = (
             SHP2PGSQL,
             '-a', # Append to existing tables (tables are created by syncdb)
             '-G', # Use geography types rather than geometry
-            '-W', 'UTF-8', # Specify that incoming data is UTF-8
+            '-W', 'latin1', # Specify that incoming data is Latin1
             shapefile,
             'census_places_placeboundary'
             )
@@ -75,7 +79,22 @@ class Command(BaseCommand):
         sql, stderr = process.communicate()
         return sql
 
-    def _get_temporary_shapefile_path_from_url(self, url):
+    def _get_shapefile_path_from_directory(self, directory):
+        shapefile_path = None
+        for path in os.listdir(directory):
+            basename, extension = os.path.splitext(path)
+            if extension == '.shp':
+                shapefile_path = os.path.join(
+                        directory,
+                        path
+                        )
+
+        if not shapefile_path:
+            raise CommandError("No shapefile was found in the data extracted!")
+
+        return shapefile_path
+
+    def _get_temporary_shapefile_dir_from_url(self, url):
         temporary_directory = tempfile.mkdtemp()
         with tempfile.TemporaryFile() as temporary_file:
             zip_file_stream = urllib2.urlopen(url)
@@ -85,20 +104,7 @@ class Command(BaseCommand):
             zip_file_stream.close()
             archive = zipfile.ZipFile(temporary_file, 'r')
             archive.extractall(temporary_directory)
-
-        shapefile_path = None
-        for path in os.listdir(temporary_directory):
-            basename, extension = os.path.splitext(path)
-            if extension == '.shp':
-                shapefile_path = os.path.join(
-                        temporary_directory,
-                        path
-                        )
-
-        if not shapefile_path:
-            raise CommandError("No shapefile was found in the data extracted!")
-
-        return shapefile_path
+        return temporary_directory
 
     def _get_fips_code_by_state_abbreviation(self, state_arg):
         for fips_code, state in STATES:
@@ -106,9 +112,9 @@ class Command(BaseCommand):
                 return fips_code
         return None
 
-    def _get_url_from_args(self, arg):
+    def _get_url_from_arg(self, arg):
         try:
-            fips_code = int(arg)
+            fips_code = "%02d" % int(arg)
         except ValueError:
             fips_code = self._get_fips_code_by_state_abbreviation(arg)
             if not fips_code:
