@@ -16,7 +16,7 @@ from census_places.enums import STATES
 
 SHP2PGSQL = getattr(settings, 'SHP2PGSQL_PATH', 'shp2pgsql')
 
-logger = logging.getLogger('census_places.management.commands.import_paces')
+logger = logging.getLogger('census_places.management.commands.import_places')
 logging.basicConfig(level=logging.INFO)
 
 class Command(BaseCommand):
