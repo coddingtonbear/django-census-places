@@ -47,7 +47,7 @@ Commands
 Examples
 --------
 
-If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for any points gathered from Google Latitude or another service, you may desire to import data for only Washington and Oregon.  To do that you would run::
+If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for any points gathered from Google Latitude or another service, you may desire to import data for only Washington and Oregon.  To do that you would run:
 
     python manage.py import_places Oregon
     python manage.py import_places Washington
