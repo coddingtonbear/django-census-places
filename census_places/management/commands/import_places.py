@@ -21,9 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 class Command(BaseCommand):
     args = '<\'State/Province Name\'|FIPS Code|\'all\'>' 
-    help = 'Imports start and end e-mail messages sent by Runmeter (http://www.abvio.com/runmeter/) '\
-            + 'delivered to a mailbox watched by django_mailbox, creating location points for the '\
-            + 'username specified.'
+    help = 'Downloads and imports place boundaries supplied by the United States Census.'
 
     URL_PATTERN = "http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%(fips_code)s_160_00_500k.zip"
 
