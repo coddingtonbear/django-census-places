@@ -9,7 +9,7 @@ Use
 For a point named `point`, you can find what city the point is within by running something like the following:
 
 ```python
-from census_places import PlaceBoundary
+from census_places.models import PlaceBoundary
 
 try:
     city = PlaceBoundary.objects.get(
@@ -22,7 +22,7 @@ except PlaceBoundary.DoesNotExist:
 But, if you happen to be gathering data from places that might not be within census designated places, you might have a desire to gather the nearest city to any given point:
 
 ```python
-from census_places import PlaceBoundary
+from census_places.models import PlaceBoundary
 
 def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
     while buffer <= buffer_maximum:
