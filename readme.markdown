@@ -1,12 +1,12 @@
 Introduction
 ============
 
-Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state name for any given point.
+Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state for any given point.
 
 Use
 ---
 
-For a point named `point`, you can find what city the point is within by running something like the following:
+For a point named `point`, you can find which (if any) city or [census designated place](http://en.wikipedia.org/wiki/Census-designated_place) the point is within by finding which PlaceBoundary object overlaps this point, like:
 
 ```python
 from census_places.models import PlaceBoundary
@@ -19,7 +19,7 @@ except PlaceBoundary.DoesNotExist:
     city = None
 ```
 
-But, if you happen to be gathering data from places that might not be within census designated places, you might have a desire to gather the nearest city to any given point:
+Sometimes, though, you might be in the uncivilized parts, and your `point` may not be within a census designated place; if you happen to be gathering data from places that might not be within a census designated place, you might have a desire to gather the nearest city to any given point:
 
 ```python
 from census_places.models import PlaceBoundary
@@ -47,7 +47,7 @@ Commands
 Examples
 --------
 
-If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for gathered location points, you may want to only import data for Washington or Oregon, and to do that you would run::
+If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for any points gathered from Google Latitude or another service, you may desire to import data for only Washington and Oregon.  To do that you would run::
 
     python manage.py import_places Oregon
     python manage.py import_places Washington
