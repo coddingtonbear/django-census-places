@@ -24,9 +24,8 @@ Sometimes, though, you might be in the uncivilized parts, and your `point` may n
     def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
         while buffer <= buffer_maximum:
             buffered_point = point.buffer(buffer)
-            cities = PlaceBoundary.objects.filter(
-                        geog__bboverlaps=buffered_point
-                    ).distance(point)\
+            cities = PlaceBoundary.objects.filter(geog__bboverlaps=buffered_point)\
+                    .distance(point)\
                     .order_by('distance')
             if cities.count() > 0:
                 return cities[0]
