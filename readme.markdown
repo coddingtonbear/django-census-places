@@ -1,15 +1,14 @@
 Introduction
-~~~~~~~~~~~~
+============
 
 Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state name for any given point.
 
 Use
 ---
 
-For a point named ``point``, you can find what city the point is within by running something like the following:
+For a point named `point`, you can find what city the point is within by running something like the following:
 
-.. code:: python
-
+```python
     from census_places import PlaceBoundary
     
     try:
@@ -18,31 +17,32 @@ For a point named ``point``, you can find what city the point is within by runni
                 )
     except PlaceBoundary.DoesNotExist:
         city = None
+```
 
 But, if you happen to be gathering data from places that might not be within census designated places, you might have a desire to gather the nearest city to any given point:
 
-.. code:: python
+```python
+from census_places import PlaceBoundary
 
-    from census_places import PlaceBoundary
-
-    def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
-        while buffer <= buffer_maximum:
-            buffered_point = point.buffer(buffer)
-            cities = PlaceBoundary.objects.filter(
-                        geog__bboverlaps=buffered_point
-                    ).distance(point)\
-                    .order_by('distance')
-            if cities.count() > 0:
-                return cities[0]
-            else:
-                buffer = buffer + buffer_interval
-                return get_nearest_city(point, buffer, buffer_interval, buffer_maximum)
-        raise Exception("You must be in an exceptionally rustic place at the moment.")
+def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
+    while buffer <= buffer_maximum:
+        buffered_point = point.buffer(buffer)
+        cities = PlaceBoundary.objects.filter(
+                    geog__bboverlaps=buffered_point
+                ).distance(point)\
+                .order_by('distance')
+        if cities.count() > 0:
+            return cities[0]
+        else:
+            buffer = buffer + buffer_interval
+            return get_nearest_city(point, buffer, buffer_interval, buffer_maximum)
+    raise Exception("You must be in an exceptionally rustic place at the moment.")
+```
 
 Commands
 --------
 
-``import_places <State/Protectorate Name|FIPS code|'all'>``: Download the specified state or protectorate's shapefile (or 'all' available shapefiles), and import the data into your application.
+`import_places <State/Protectorate Name|FIPS code|'all'>`: Download the specified state or protectorate's shapefile (or 'all' available shapefiles), and import the data into your application.
 
 Examples
 --------
