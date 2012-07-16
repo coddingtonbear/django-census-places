@@ -9,14 +9,14 @@ Use
 For a point named `point`, you can find what city the point is within by running something like the following:
 
 ```python
-    from census_places import PlaceBoundary
-    
-    try:
-        city = PlaceBoundary.objects.get(
-                geog__covers=point
-                )
-    except PlaceBoundary.DoesNotExist:
-        city = None
+from census_places import PlaceBoundary
+
+try:
+    city = PlaceBoundary.objects.get(
+            geog__covers=point
+            )
+except PlaceBoundary.DoesNotExist:
+    city = None
 ```
 
 But, if you happen to be gathering data from places that might not be within census designated places, you might have a desire to gather the nearest city to any given point:
