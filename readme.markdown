@@ -22,17 +22,18 @@ Sometimes, though, you might be in the uncivilized parts, and your `point` may n
     from census_places.models import PlaceBoundary
 
     def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
-        while buffer <= buffer_maximum:
-            buffered_point = point.buffer(buffer)
-            cities = PlaceBoundary.objects.filter(geog__bboverlaps=buffered_point)\
-                    .distance(point)\
-                    .order_by('distance')
-            if cities.count() > 0:
-                return cities[0]
-            else:
-                buffer = buffer + buffer_interval
+        buffered_point = point.buffer(buffer)
+        cities = PlaceBoundary.objects.filter(geog__bboverlaps=buffered_point)\
+                .distance(point)\
+                .order_by('distance')
+        if cities.count() > 0:
+            return cities[0]
+        else:
+            buffer = buffer + buffer_interval
+            if buffer <= buffer_maximum:
                 return get_nearest_city(point, buffer, buffer_interval, buffer_maximum)
-        raise Exception("You must be in an exceptionally rustic place at the moment.")
+            else:
+                raise Exception("You must be in an exceptionally rustic place at the moment.")
 
 Commands
 --------
