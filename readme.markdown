@@ -1,7 +1,7 @@
 Introduction
 ============
 
-Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state for any given point.
+Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state for any given point within the United States.
 
 Use
 ---
