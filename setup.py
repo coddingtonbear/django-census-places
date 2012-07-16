@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='census_places',
+    name='django_census_places',
     version='1.0.3',
     url='http://bitbucket.org/latestrevision/django-census-places/',
     description='Import and utilize place boundaries provided by the United States Census',
