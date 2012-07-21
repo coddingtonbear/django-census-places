@@ -30,29 +30,23 @@ For a point named `point`, you can find which (if any) city or [census designate
     from census_places.models import PlaceBoundary
 
     try:
-        city = PlaceBoundary.objects.get(
-                geog__covers=point
-                )
+        city = PlaceBoundary.get_containing(point)
     except PlaceBoundary.DoesNotExist:
+        # You are currently outside of any known city's boundaries
         city = None
 
 Sometimes, though, you might be in the uncivilized parts, and your `point` may not be within a census designated place; if you happen to be gathering data from places that might not be within a census designated place, you might have a desire to gather the nearest city to any given point:
 
     from census_places.models import PlaceBoundary
 
-    def get_nearest_city(point, buffer=0.1, buffer_interval=0.1, buffer_maximum=10):
-        buffered_point = point.buffer(buffer)
-        cities = PlaceBoundary.objects.filter(geog__bboverlaps=buffered_point)\
-                .distance(point)\
-                .order_by('distance')
-        if cities.count() > 0:
-            return cities[0]
-        else:
-            buffer = buffer + buffer_interval
-            if buffer <= buffer_maximum:
-                return get_nearest_city(point, buffer, buffer_interval, buffer_maximum)
-            else:
-                raise Exception("You must be in an exceptionally rustic place at the moment.")
+    try:
+        city = PlaceBoundary.get_nearest_to(point)
+        # The returned object is annotated with its distance from the point you
+        # specified, and can be gathered from its 'distance' property:
+        print "This place is %s miles from me" % city.distance.mi
+    except PlaceBoundary.DoesNotExist:
+        # You must be in an exceptionally rustic place at the moment
+        city = None
 
 Commands
 --------
