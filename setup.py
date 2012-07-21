@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name='django_census_places',
-    version='1.1',
+    name='django-census-places',
+    version='1.1.1',
     url='http://bitbucket.org/latestrevision/django-census-places/',
     description='Use city (and census designated place) boundaries provided by the United States Census',
     author='Adam Coddington',

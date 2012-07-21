@@ -8,7 +8,7 @@ Installation
 
 You can either install from pip:
 
-    pip install django_census_places
+    pip install django-census-places
 
 *or* checkout and install the source from the [bitbucket repository](https://bitbucket.org/latestrevision/django-census-places):
 
