@@ -3,18 +3,16 @@ from __future__ import with_statement
 import logging
 import os.path
 import shutil
-import subprocess
 import tempfile
 import urllib2
 import zipfile
 
-from django.conf import settings
+from django.contrib.gis.gdal import DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
+from django.db import transaction
 
 from census_places.enums import STATES
-
-SHP2PGSQL = getattr(settings, 'SHP2PGSQL_PATH', 'shp2pgsql')
+from census_places.models import PlaceBoundary
 
 logger = logging.getLogger('census_places.management.commands.import_places')
 logging.basicConfig(level=logging.INFO)
@@ -45,37 +43,51 @@ class Command(BaseCommand):
 
     def import_single_state(self, arg):
         url = self._get_url_from_arg(arg)
-        logger.info("Importing \"%s\" from %s" % (arg, url))
+        logger.info("Downloading data for \"%s\" from %s" % (arg, url))
         shapefile_dir = self._get_temporary_shapefile_dir_from_url(url)
-        sql = self._get_sql_from_shapefile_dir(shapefile_dir)
-        self._import_from_sql(sql)
+        self._insert_from_shapefile(shapefile_dir)
         shutil.rmtree(shapefile_dir)
 
     def _cleanup_temporary_directory(self, directory):
         shutil.rmtree(directory)
 
-    def _import_from_sql(self, sql):
-        cursor = connection.cursor()
-        cursor.execute(sql)
+    def _get_multipolygon_geometry_from_row(self, row):
+        if row.geom_type.django == 'PolygonField':
+            geom = OGRGeometry(OGRGeomType('MultiPolygon'))
+            geom.add(row.geom)
+            return geom
+        elif row.geom_type.django == 'MultiPolygonField':
+            return geom
 
-    def _get_sql_from_shapefile_dir(self, shapefile_dir):
-        shapefile = self._get_shapefile_path_from_directory(shapefile_dir)
-        shapefile_extraction_args = (
-            SHP2PGSQL,
-            '-a', # Append to existing tables (tables are created by syncdb)
-            '-G', # Use geography types rather than geometry
-            '-W', 'latin1', # Specify that incoming data is Latin1
-            shapefile,
-            'census_places_placeboundary'
-            )
+    def _insert_from_shapefile(self, shapefile_dir):
+        shapefile_path = self._get_shapefile_path_from_directory(shapefile_dir)
+        source = DataSource(shapefile_path)
 
-        logger.debug(shapefile_extraction_args)
-        process = subprocess.Popen(
-                shapefile_extraction_args,
-                stdout=subprocess.PIPE
-                )
-        sql, stderr = process.communicate()
-        return sql
+        for row in source[0]:
+            geom = self._get_multipolygon_geometry_from_row(row)
+            if not geom:
+                logger.warning(
+                        "Unable to convert row %s %s into MultiPolygon" % (
+                            row.fid,
+                            repr(row)
+                            )
+                        )
+                continue
+            place = PlaceBoundary()
+            place.geo_id = row.get('GEO_ID')
+            place.state = row.get('STATE')
+            place.place = row.get('PLACE')
+            place.name = row.get('NAME').decode('latin1')
+            place.lsad = row.get('LSAD')
+            place.censusarea = row.get('CENSUSAREA')
+            place.geog = geom.wkt
+            place.save()
+            logger.info(
+                    "Imported (%s) %s" % (
+                        row.fid,
+                        place.name,
+                        )
+                    )
 
     def _get_shapefile_path_from_directory(self, directory):
         shapefile_path = None
