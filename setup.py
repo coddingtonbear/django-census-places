@@ -4,7 +4,7 @@ setup(
     name='django_census_places',
     version='1.0.3',
     url='http://bitbucket.org/latestrevision/django-census-places/',
-    description='Import and utilize place boundaries provided by the United States Census',
+    description='Use city (and census designated place) boundaries provided by the United States Census',
     author='Adam Coddington',
     author_email='me@adamcoddington.net',
     classifiers=[
