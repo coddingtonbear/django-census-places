@@ -4,5 +4,6 @@ census_places/__init__.py
 census_places/admin.py
 census_places/enums.py
 census_places/models.py
+census_places/management/__init__.py
 census_places/management/commands/__init__.py
 census_places/management/commands/import_places.py
