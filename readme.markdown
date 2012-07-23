@@ -22,6 +22,17 @@ You can either install from pip:
     cd django-census-places
     python setup.py install
 
+If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for any points gathered from Google Latitude or another service, you may desire to import data for only Washington and Oregon.  To do that you would run:
+
+    python manage.py import_places Oregon
+    python manage.py import_places Washington
+
+But if you happen using this location information for data that could be from any state, you would instead run::
+
+    python manage.py import_places all
+
+See the 'Commands' section below for more information.
+
 Use
 ---
 
@@ -53,14 +64,3 @@ Commands
 
 `import_places <State/Protectorate Name|FIPS code|'all'>`: Download the specified state or protectorate's shapefile (or 'all' available shapefiles), and import the data into your application.
 
-Examples
---------
-
-If you, perhaps, live in Portland, Oregon, and are using this application to identify the city name for any points gathered from Google Latitude or another service, you may desire to import data for only Washington and Oregon.  To do that you would run:
-
-    python manage.py import_places Oregon
-    python manage.py import_places Washington
-
-But if you happen using this location information for data that could be from any state, you would instead run::
-
-    python manage.py import_places all
