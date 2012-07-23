@@ -10,6 +10,7 @@ import zipfile
 from django.contrib.gis.gdal import DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.db.utils import IntegrityError
 
 from census_places.enums import STATES
 from census_places.models import PlaceBoundary
@@ -81,13 +82,25 @@ class Command(BaseCommand):
             place.lsad = row.get('LSAD')
             place.censusarea = row.get('CENSUSAREA')
             place.geog = geom.wkt
-            place.save()
-            logger.info(
-                    "Imported (%s) %s" % (
-                        row.fid,
-                        place.name,
+
+            sid = transaction.savepoint()
+            try:
+                place.save()
+                transaction.savepoint_commit(sid)
+                logger.info(
+                        "(%s) %s Imported Successfully" % (
+                            row.fid,
+                            place.name,
+                            )
                         )
-                    )
+            except IntegrityError:
+                transaction.savepoint_rollback(sid)
+                logger.warning(
+                        "(%s) %s Already Exists" % (
+                            row.fid,
+                            place.name,
+                            )
+                        )
 
     def _get_shapefile_path_from_directory(self, directory):
         shapefile_path = None
