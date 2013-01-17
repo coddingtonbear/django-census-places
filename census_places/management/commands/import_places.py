@@ -12,8 +12,14 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.utils import IntegrityError
 
+from optparse import make_option
+
 from census_places.enums import STATES
-from census_places.models import PlaceBoundary
+from census_places.models import PlaceBoundary, ZIPBoundary
+
+STATE = 'state'
+ZCTA = 'zcta'
+FILE_TYPES = (STATE, ZCTA)
 
 logger = logging.getLogger('census_places.management.commands.import_places')
 logging.basicConfig(level=logging.INFO)
@@ -21,11 +27,21 @@ logging.basicConfig(level=logging.INFO)
 class Command(BaseCommand):
     args = '<\'State/Province Name\'|FIPS Code|\'all\'>' 
     help = 'Downloads and imports place boundaries supplied by the United States Census.'
+    
+    option_list = BaseCommand.option_list + (
+        make_option('--dryrun', action='store_true', default=False),
+        make_option('--verbose', action='store_true', default=False),
+        make_option('--zips', action='store_true', default=False, help='If given, imports Zip Code Tabulation Areas for the given state.'),
+    )
 
-    URL_PATTERN = "http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%(fips_code)s_160_00_500k.zip"
+    URL_PATTERN =      "http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_%(fips_code)s_160_00_500k.zip"
+    URL_PATTERN_ZCTA = "http://www2.census.gov/geo/tiger/TIGER2010/ZCTA5/2010/tl_2010_%(fips_code)s_zcta510.zip"
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
+        self.dryrun = options['dryrun']
+        self.verbose = options['verbose']
+        self.zips = options['zips']
         try:
             arg = args[0]
         except IndexError:
@@ -44,10 +60,17 @@ class Command(BaseCommand):
 
     def import_single_state(self, arg):
         url = self._get_url_from_arg(arg)
-        logger.info("Downloading data for \"%s\" from %s" % (arg, url))
+        logger.info("Downloading state data for \"%s\" from %s" % (arg, url))
         shapefile_dir = self._get_temporary_shapefile_dir_from_url(url)
-        self._insert_from_shapefile(shapefile_dir)
+        self._insert_from_shapefile(shapefile_dir, file_type=STATE)
         shutil.rmtree(shapefile_dir)
+        
+        if self.zips:
+            url = self._get_url_from_arg(arg, file_type=ZCTA)
+            logger.info("Downloading zip data for \"%s\" from %s" % (arg, url))
+            shapefile_dir = self._get_temporary_shapefile_dir_from_url(url)
+            self._insert_from_shapefile(shapefile_dir, file_type=ZCTA)
+            shutil.rmtree(shapefile_dir)
 
     def _cleanup_temporary_directory(self, directory):
         shutil.rmtree(directory)
@@ -60,11 +83,16 @@ class Command(BaseCommand):
         elif row.geom_type.django == 'MultiPolygonField':
             return geom
 
-    def _insert_from_shapefile(self, shapefile_dir):
+    def _insert_from_shapefile(self, shapefile_dir, file_type=STATE):
+        assert file_type in FILE_TYPES
         shapefile_path = self._get_shapefile_path_from_directory(shapefile_dir)
         source = DataSource(shapefile_path)
 
+        total = len(source[0])
+        i = 0
         for row in source[0]:
+            i += 1
+            logger.info('%i of %i: %.0f%%' % (i, total, i/float(total)*100))
             geom = self._get_multipolygon_geometry_from_row(row)
             if not geom:
                 logger.warning(
@@ -74,31 +102,68 @@ class Command(BaseCommand):
                             )
                         )
                 continue
-            place = PlaceBoundary()
-            place.geo_id = row.get('GEO_ID')
-            place.state = row.get('STATE')
-            place.place = row.get('PLACE')
-            place.name = row.get('NAME').decode('latin1')
-            place.lsad = row.get('LSAD')
-            place.censusarea = row.get('CENSUSAREA')
-            place.geog = geom.wkt
+            
+            if self.verbose:
+                for field in row.fields:
+                    logger.info('%s %s' % (field, row.get(field)))
+                
+            if file_type == STATE:
+                key = dict(
+                    geo_id = row.get('GEO_ID'),
+                    state = row.get('STATE'),
+                    place = row.get('PLACE'),
+                    defaults = dict(
+                        name = row.get('NAME').decode('latin1'),
+                        lsad = row.get('LSAD'),
+                        censusarea = row.get('CENSUSAREA'),
+                        geog = geom.wkt,
+                    )
+                )
+                obj, _ = PlaceBoundary.objects.get_or_create(**key)
+                for k, d in key.iteritems():
+                    if k == 'defaults':
+                        continue
+                    setattr(obj, k, d)
+            else:
+                key = dict(
+                    state =row.get('STATEFP10'),
+                    geo_id = row.get('GEOID10'),
+                    zip_code = row.get('ZCTA5CE10'),
+                    defaults = dict(
+                        classfp10 = row.get('CLASSFP10'),
+                        mtfcc10 = row.get('MTFCC10'),
+                        funcstat10 = row.get('FUNCSTAT10'),
+                        aland10 = row.get('ALAND10'),
+                        awater10 = row.get('AWATER10'),
+                        lat = row.get('INTPTLAT10'),
+                        lng = row.get('INTPTLON10'),
+                        partflg10 = row.get('PARTFLG10'),
+                        geog = geom.wkt,
+                    )
+                )
+                obj, _ = ZIPBoundary.objects.get_or_create(**key)
+                for k, d in key.iteritems():
+                    if k == 'defaults':
+                        continue
+                    setattr(obj, k, d)
 
-            sid = transaction.savepoint()
-            try:
-                place.save()
-                transaction.savepoint_commit(sid)
-                logger.info(
+            if not self.dryrun:
+                sid = transaction.savepoint()
+                try:
+                    obj.save()
+                    transaction.savepoint_commit(sid)
+                    logger.info(
                         "(%s) %s Imported Successfully" % (
                             row.fid,
-                            place.name,
+                            obj,
                             )
                         )
-            except IntegrityError:
-                transaction.savepoint_rollback(sid)
-                logger.warning(
+                except IntegrityError:
+                    transaction.savepoint_rollback(sid)
+                    logger.warning(
                         "(%s) %s Already Exists" % (
                             row.fid,
-                            place.name,
+                            obj,
                             )
                         )
 
@@ -135,7 +200,8 @@ class Command(BaseCommand):
                 return fips_code
         return None
 
-    def _get_url_from_arg(self, arg):
+    def _get_url_from_arg(self, arg, file_type=STATE):
+        assert file_type in FILE_TYPES
         try:
             fips_code = "%02d" % int(arg)
         except ValueError:
@@ -144,4 +210,7 @@ class Command(BaseCommand):
                 raise CommandError(
                         "The state name you specified \"%s\" was not found." % arg
                         )
-        return self.URL_PATTERN % {'fips_code': fips_code}
+        if file_type == STATE:
+            return self.URL_PATTERN % {'fips_code': fips_code}
+        else:
+            return self.URL_PATTERN_ZCTA % {'fips_code': fips_code}

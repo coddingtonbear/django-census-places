@@ -7,40 +7,46 @@ from census_places.enums import STATES
 logger = logging.getLogger('census_places.models')
 
 class PlaceBoundary(models.Model):
+    
     geo_id = models.CharField(
-            primary_key=True,
-            max_length=60
-            )
+        primary_key=True,
+        max_length=60
+    )
+    
     state = models.CharField(
-            max_length=2,
-            db_index=True,
-            choices=STATES
-            )
+        max_length=2,
+        db_index=True,
+        choices=STATES
+    )
+    
     place = models.CharField(max_length=5)
     name = models.CharField(max_length=90)
     lsad = models.CharField(
-            null=True,
-            blank=True,
-            max_length=7
-            )
-    censusarea = models.FloatField()
+        null=True,
+        blank=True,
+        max_length=7
+    )
+    
+    censusarea = models.FloatField(
+        verbose_name='census area')
+    
     geog = models.MultiPolygonField(
-            geography=True,
-            spatial_index=True
-            )
+        geography=True,
+        spatial_index=False#True # Breaks MySQL with InnoDB.
+    )
 
     objects = models.GeoManager()
 
     @classmethod
     def get_containing(cls, point):
         boundary = cls.objects.get(
-                geog__covers=point
-                )
+            geog__covers=point
+        )
         logger.debug("Found geometry %s covering %s" % (
                 boundary,
                 point,
-                )
             )
+        )
         return boundary
 
     @classmethod
@@ -88,3 +94,71 @@ class PlaceBoundary(models.Model):
         ordering = ['name', ]
         verbose_name_plural = "Place Boundaries"
         verbose_name = "Place Boundary"
+#        app_label = 'census places'
+#        db_table = 'census_places_placeboundary'
+
+class ZIPBoundary(models.Model):
+    
+    geo_id = models.CharField(
+        primary_key=True,
+        max_length=60)
+    
+    state = models.CharField(
+        max_length=2,
+        db_index=True,
+        choices=STATES)
+    
+    zip_code = models.CharField(
+        max_length=10,
+        unique=True,
+        db_index=True)
+    
+    classfp10 = models.CharField(
+        max_length=10,
+        db_index=True)
+    
+    mtfcc10 = models.CharField(
+        max_length=10,
+        db_index=True)
+    
+    funcstat10 = models.CharField(
+        max_length=10,
+        db_index=True)
+    
+    aland10 = models.PositiveIntegerField(
+        verbose_name='land area')
+    
+    awater10 = models.PositiveIntegerField(
+        verbose_name='water area')
+    
+    lat = models.DecimalField(
+        max_digits=15,
+        decimal_places=10,
+        verbose_name='latitude')
+    
+    lng = models.DecimalField(
+        max_digits=15,
+        decimal_places=10,
+        verbose_name='longitude')
+    
+    partflg10 = models.CharField(
+        max_length=10,
+        db_index=True)
+    
+    geog = models.MultiPolygonField(
+        geography=True,
+        spatial_index=False#True # Breaks MySQL with InnoDB.
+        )
+
+    objects = models.GeoManager()
+
+    def __unicode__(self):
+        return "%s" % (self.zip_code,)
+
+    class Meta:
+        ordering = ['zip_code', ]
+        verbose_name_plural = "ZIP Boundaries"
+        verbose_name = "ZIP Boundary"
+#        app_label = 'census places'
+#        db_table = 'census_places_zipboundary'
+        
