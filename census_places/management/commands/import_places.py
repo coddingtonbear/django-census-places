@@ -126,7 +126,7 @@ class Command(BaseCommand):
                     setattr(obj, k, d)
             else:
                 key = dict(
-                    state =row.get('STATEFP10'),
+                    state = row.get('STATEFP10'),
                     geo_id = row.get('GEOID10'),
                     zip_code = row.get('ZCTA5CE10'),
                     defaults = dict(
@@ -141,11 +141,14 @@ class Command(BaseCommand):
                         geog = geom.wkt,
                     )
                 )
-                obj, _ = ZIPBoundary.objects.get_or_create(**key)
-                for k, d in key.iteritems():
-                    if k == 'defaults':
-                        continue
-                    setattr(obj, k, d)
+                try:
+                    obj, _ = ZIPBoundary.objects.get_or_create(**key)
+                    for k, d in key.iteritems():
+                        if k == 'defaults':
+                            continue
+                        setattr(obj, k, d)
+                except IntegrityError, e:
+                    pass
 
             if not self.dryrun:
                 sid = transaction.savepoint()
