@@ -26,8 +26,12 @@ admin.site.register(PlaceBoundary, PlaceBoundaryAdmin)
 class ZIPBoundaryAdmin(admin.options.OSMGeoAdmin):
     list_display = (
         'zip_code',
+        'state',
         'lat',
         'lng'
+    )
+    list_filter = (
+        'state',
     )
     search_fields = (
         'zip_code',
