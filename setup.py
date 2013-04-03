@@ -1,8 +1,10 @@
 from distutils.core import setup
 
+from census_places import __version__
+
 setup(
     name='django-census-places',
-    version='1.2.2',
+    version=__version__,
     url='http://bitbucket.org/latestrevision/django-census-places/',
     description='Use city (and census designated place) boundaries provided by the United States Census',
     author='Adam Coddington',
@@ -19,5 +21,6 @@ setup(
         'census_places',
         'census_places.management',
         'census_places.management.commands',
-        ]
+        'census_places.migrations',
+    ]
 )
