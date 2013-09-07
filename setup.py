@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 from census_places import __version__
 
@@ -17,10 +17,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: GIS',
     ],
-    packages=[
-        'census_places',
-        'census_places.management',
-        'census_places.management.commands',
-        'census_places.migrations',
-    ]
+    packages=find_packages()
 )
