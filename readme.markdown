@@ -1,5 +1,5 @@
-Introduction
-============
+Django-census-places
+====================
 
 Do you have GPS data that you would like to populate with City & State information?  This Django application allows you to import census-designated place shapefiles provided by the United States Census, and then utilize that data to find the city and state for any given point within the United States.
 
@@ -64,3 +64,5 @@ Commands
 
 `import_places <State/Protectorate Name|FIPS code|'all'>`: Download the specified state or protectorate's shapefile (or 'all' available shapefiles), and import the data into your application.
 
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/latestrevision/django-census-places/trend.png)](https://bitdeli.com/f
