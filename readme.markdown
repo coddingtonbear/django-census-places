@@ -10,12 +10,6 @@ You can either install from pip:
 
     pip install django-census-places
 
-*or* checkout and install the source from the [bitbucket repository](https://bitbucket.org/latestrevision/django-census-places):
-
-    hg clone https://bitbucket.org/latestrevision/django-census-places
-    cd django-census-places
-    python setup.py install
-
 *or* checkout and install the source from the [github repository](https://github.com/latestrevision/django-census-places):
 
     git clone https://github.com/latestrevision/django-census-places.git
@@ -65,4 +59,4 @@ Commands
 `import_places <State/Protectorate Name|FIPS code|'all'>`: Download the specified state or protectorate's shapefile (or 'all' available shapefiles), and import the data into your application.
 
 
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/latestrevision/django-census-places/trend.png)](https://bitdeli.com/f
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/latestrevision/django-census-places/trend.png)](https://bitdeli.com/free)

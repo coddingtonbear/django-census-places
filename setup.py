@@ -5,7 +5,7 @@ from census_places import __version__
 setup(
     name='django-census-places',
     version=__version__,
-    url='http://bitbucket.org/latestrevision/django-census-places/',
+    url='http://github.com/latestrevision/django-census-places/',
     description='Use city (and census designated place) boundaries provided by the United States Census',
     author='Adam Coddington',
     author_email='me@adamcoddington.net',
