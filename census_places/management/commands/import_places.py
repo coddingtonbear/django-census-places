@@ -7,6 +7,7 @@ import tempfile
 import urllib2
 import zipfile
 
+from django import VERSION
 from django.contrib.gis.gdal import DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -86,7 +87,11 @@ class Command(BaseCommand):
     def _insert_from_shapefile(self, shapefile_dir, file_type=STATE):
         assert file_type in FILE_TYPES
         shapefile_path = self._get_shapefile_path_from_directory(shapefile_dir)
-        source = DataSource(shapefile_path)
+
+        if VERSION >= (1, 5):
+            source = DataSource(shapefile_path, encoding='latin1')
+        else:
+            source = DataSource(shapefile_path)
 
         total = len(source[0])
         i = 0
@@ -113,7 +118,11 @@ class Command(BaseCommand):
                     state = row.get('STATE'),
                     place = row.get('PLACE'),
                     defaults = dict(
-                        name = row.get('NAME').decode('latin1'),
+                        name = (
+                            row.get('NAME')
+                            if VERSION >= (1, 5) else
+                            row.get('NAME').decode('latin1')
+                        ),
                         lsad = row.get('LSAD'),
                         censusarea = row.get('CENSUSAREA'),
                         geog = geom.wkt,
